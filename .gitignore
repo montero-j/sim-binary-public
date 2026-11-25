@@ -1,0 +1,11 @@
+# Build output
+box2d/build/
+simulation/bin/
+simulation/obj/
+
+# Analysis output
+master_sim_index.csv
+processed_data/
+datos_simulaciones/
+__pycache__/
+*.pyc

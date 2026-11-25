@@ -1,0 +1,209 @@
+import pandas as pd
+import numpy as np
+import os
+import glob
+import re
+import json
+from multiprocessing import Pool, cpu_count
+
+DT_THRESHOLD = 0.5
+T_ESPERA_ATASCO = 5.0
+JUMP_THRESHOLD = 15.0
+X_LIMS, Y_LIMS = [-10.25, 10.25], [0, 120.0]
+GRID_NX, GRID_NY = 50, 150
+TIME_STEP = 0.001
+
+PREPRO_DIR = "0_mapa_prepro"
+EMPAREJAR = False
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+import rutas
+DATA_DIR = rutas.AVALANCHE_DIR
+IDX_PATH = rutas.MASTER_INDEX
+
+
+def get_target_info(sim_row):
+    """Identifies the large-grain type (largest radius)."""
+    try:
+        grains = json.loads(sim_row['grain_json'])
+        radios = [float(g['radius']) for g in grains]
+        return int(np.argmax(radios))
+    except Exception:
+        return 0
+
+
+def get_frame_data(filepath):
+    particles = []
+    try:
+        with open(filepath, 'r') as f:
+            for line in f:
+                p = line.split()
+                if not p or int(p[0]) < 0:
+                    continue
+                gid, n_lados, ptype = int(p[0]), int(p[1]), int(p[-1])
+                if n_lados == 1:
+                    x, y = float(p[2]), float(p[3])
+                else:
+                    coords = [float(val) for val in p[2:-1]]
+                    x, y = sum(coords[::2]) / n_lados, sum(coords[1::2]) / n_lados
+                particles.append([gid, x, y, ptype])
+        return np.array(particles)
+    except Exception:
+        return None
+
+
+def parse_t_espera(sim_path, default=T_ESPERA_ATASCO):
+    """tEsperaAtasco from params.in (s), or the default value."""
+    try:
+        with open(os.path.join(sim_path, "params.in")) as f:
+            for line in f:
+                if line.strip().startswith('tEsperaAtasco:'):
+                    return float(line.split(':')[1].split('#')[0])
+    except Exception:
+        pass
+    return default
+
+
+def contar_atascos_en_disco(sim_path, dir_id=''):
+    """Number of atasco_XXXXX.xy snapshots (contact files excluded)."""
+    carpetas = [os.path.join(sim_path, f"frames_{dir_id}")] if dir_id != '' else []
+    carpetas += sorted(glob.glob(os.path.join(sim_path, "frames_*")))
+    for d in carpetas:
+        if os.path.isdir(d):
+            return len([f for f in os.listdir(d)
+                        if f.startswith('atasco_') and f.endswith('.xy') and not f.startswith('atasco_contacts_')])
+    return 0
+
+
+def process_everything(sim_row, emparejar=None):
+    """Processes one simulation: its avalanches and, optionally, the clog that ended each one."""
+    emparejar = EMPAREJAR if emparejar is None else emparejar
+    try:
+        path = sim_row['path']
+        s_hash = sim_row['sim_hash']
+        config_hash = sim_row.get('config_hash', '')
+        dir_id = sim_row.get('dirID', '')
+        target_id = get_target_info(sim_row)
+
+        ruta_flux = os.path.join(path, "flx.dat")
+        if not os.path.exists(ruta_flux) and dir_id != '':
+            ruta_flux = os.path.join(path, f"frames_{dir_id}", "flx.dat")
+
+        avalanchas = []
+        if os.path.exists(ruta_flux):
+            events = []
+            with open(ruta_flux, 'r') as f:
+                for line in f:
+                    if line.startswith('#') or not line.strip():
+                        continue
+                    p = line.split()
+                    if len(p) >= 3:
+                        events.append((float(p[2]), int(p[1])))
+
+            if events:
+                events.sort()
+                rachas = []
+                t0, t_ult, big, tot = events[0][0], events[0][0], 0, 0
+                for t, tipo in events:
+                    if t - t_ult > DT_THRESHOLD:
+                        rachas.append((t0, t_ult, big, tot))
+                        t0, big, tot = t, 0, 0
+                    t_ult = t
+                    tot += 1
+                    big += (tipo == target_id)
+                rachas.append((t0, t_ult, big, tot))
+
+                if not emparejar:
+                    for a0, a1, big, tot in rachas:
+                        if big > 0:
+                            avalanchas.append({
+                                'sim_hash': s_hash,
+                                'config_hash': config_hash,
+                                'tirada': sim_row['tirada'],
+                                'duracion': a1 - a0,
+                                'tamano_big': big,
+                                'total_mix': tot,
+                                'radio_salida': sim_row.get('Radio_salida', np.nan),
+                                't_inicio': a0,
+                                't_fin': a1,
+                            })
+                    return avalanchas
+
+                t_espera = parse_t_espera(path)
+                n_desp = []
+                for i, (a0, a1, _, _) in enumerate(rachas):
+                    if i + 1 < len(rachas):
+                        hueco = rachas[i + 1][0] - a1
+                        n_desp.append((hueco, max(0, int(np.floor((hueco - DT_THRESHOLD) / t_espera + 1e-6)))))
+                    else:
+                        n_desp.append((np.nan, 0))
+
+                n_pred = sum(n for _, n in n_desp)
+                n_disco = contar_atascos_en_disco(path, dir_id)
+                coincide = (n_pred == n_disco)
+                if not coincide:
+                    print(f"[warning] {s_hash}: {n_pred} clogs predicted from flx.dat vs {n_disco} "
+                          f"atasco_*.xy files on disk -> avalanches and arches are not matched in this simulation")
+                contador = 0
+                for (a0, a1, big, tot), (hueco, n) in zip(rachas, n_desp):
+                    atasco_id = contador + 1 if (n > 0 and coincide) else np.nan
+                    contador += n
+                    if big > 0:
+                        avalanchas.append({
+                            'sim_hash': s_hash,
+                            'config_hash': config_hash,
+                            'tirada': sim_row['tirada'],
+                            'duracion': a1 - a0,
+                            'tamano_big': big,
+                            'total_mix': tot,
+                            'radio_salida': sim_row.get('Radio_salida', np.nan),
+                            't_inicio': a0,
+                            't_fin': a1,
+                            'hueco_despues': hueco,
+                            'n_atascos_despues': n,
+                            'atasco_id': atasco_id,
+                            'emparejado_ok': coincide,
+                        })
+
+        return avalanchas
+
+    except Exception as e:
+        print(f"Error processing {sim_row.get('sim_hash', 'sin_hash')}: {e}")
+        return []
+
+
+def _inicializar_worker(emparejar):
+    global EMPAREJAR
+    EMPAREJAR = emparejar
+
+
+def main(emparejar=False):
+    os.makedirs(DATA_DIR, exist_ok=True)
+
+    if not os.path.exists(IDX_PATH):
+        print("Error: run indexer.py first")
+        return
+
+    df_idx = pd.read_csv(IDX_PATH)
+    print(f"--- PROCESSING {len(df_idx)} SIMULATIONS ---"
+          + (" (matching avalanches with clogs)" if emparejar else ""))
+
+    with Pool(cpu_count(), initializer=_inicializar_worker, initargs=(emparejar,)) as pool:
+        results = pool.map(process_everything, df_idx.to_dict('records'))
+
+    all_av = [item for sublist in results if sublist for item in sublist]
+
+    if all_av:
+        av_file = os.path.join(DATA_DIR, "resultados_completos_esqueleto.csv")
+        pd.DataFrame(all_av).to_csv(av_file, index=False)
+        print(f"Done: {len(all_av)} avalanches saved to {av_file}")
+    else:
+        print("No avalanches found.")
+
+
+if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser(description="Avalanches of each simulation (from flx.dat).")
+    ap.add_argument('--emparejar', action='store_true',
+                    help="match each avalanche with the atasco_XXXXX.xy snapshot of the clog that stopped it (column atasco_id)")
+    main(emparejar=ap.parse_args().emparejar)
