@@ -126,30 +126,6 @@ export SIM_DATA_DIR=/path/to/simulation_data
    python3 analysis/1_avalanchas_y_arcos/ccdf_avalanchas.py
    ```
 
-### Figures of the paper
-
-| Figure | File | Script |
-|---|---|---|
-| Detected arch | `arco_y_fuerzas_contacto_<k>.pdf` | `2_fuerzas/graficar_arco_fuerza.py --sim <run folder> --jam_id <k> --formato pdf` |
-| Segregation, chi_eff(t)/chi | `chi_temporal_comparacion.pdf` | `1_avalanchas_y_arcos/temporal_chi.py --casos <sim_hash> <sim_hash> --normalizar` |
-| <s> vs chi, disk-disk | `11a-additive-linear.pdf` | `graficos_finales.py` |
-| <s>/<s>_0 vs R_a, disk-disk | `2-discog-discoc-vs-area-ratio_B.pdf` | `graficos_finales.py` |
-| ln(<s>+1) and ln(<s>/<s>_0+1) vs chi, R_a = 0.1 | `5c-matrix-raw-log.pdf`, `5b-matrix-normalized.pdf` | `graficos_finales.py` |
-| ln(<s>+1) vs chi for several R_a | `4-<shape>-discoc-clogging-curves.pdf` | `graficos_finales.py` |
-| Arch composition | `6-arch-composition-mass_nuevo.pdf` | `graficos_finales.py` |
-| Arch aspect ratio | `15-evolution-relacion_aspecto_nuevo.pdf` | `graficos_finales.py` |
-| Pressure in the arch and in the ROI | `comparacion_chi_0p4_nuevo_<shape>.pdf` | `3_presion_y_mapas/comparar_presion_por_chi.py` |
-| <P> of the arch vs <s> | `16-P-vs-s-arco-ratio-0.1-W-2-logs_nuevo.pdf` | `3_presion_y_mapas/correlacion_s_vs_P.py --s_en_x --logy` |
-
-### Supplemental Material
-
-| Content | Script |
-|---|---|
-| Correlation between consecutive avalanches (first-return maps, autocorrelation, block averaging) | `1_avalanchas_y_arcos/correlacion_avalanchas_formas.py` (uses `sem_bloques.py`) |
-| Avalanche-size distributions (CCDF and exponential fit) | `1_avalanchas_y_arcos/ccdf_avalanchas.py` |
-| <s> in linear scale, zoom at low chi, box plots, arch tortuosity and geometry | `1_avalanchas_y_arcos/figuras_suplementario.py` |
-| Arch composition in number of grains | `graficos_finales.py --solo_composicion` |
-
 Every script accepts `--help`.
 
 ## Notes
