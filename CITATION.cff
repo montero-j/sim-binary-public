@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the article and the archived software version below."
+title: "sim-binary-public: DEM simulation and analysis of clogging in a silo with binary mixtures of polygonal and small circular grains"
+type: software
+version: 1.0.0
+date-released: 2026-11-26
+license: MIT
+repository-code: "https://github.com/montero-j/sim-binary-public"
+# doi: 10.5281/zenodo.XXXXXXX   # uncomment with the Zenodo concept DOI
+keywords:
+  - granular materials
+  - silo discharge
+  - clogging
+  - binary mixtures
+  - discrete element method
+  - Box2D
+authors:
+  - family-names: Montero
+    given-names: Julián
+    affiliation: "Universidad Nacional de La Pampa"
+    # orcid: "https://orcid.org/0000-0000-0000-0000"
+  - family-names: Pugnaloni
+    given-names: Luis A.
+    affiliation: "Universidad Nacional de La Pampa"
+    # orcid: "https://orcid.org/0000-0000-0000-0000"
+  - family-names: Carlevaro
+    given-names: C. Manuel
+    affiliation: "Instituto de Física de Líquidos y Sistemas Biológicos (CONICET-UNLP)"
+    # orcid: "https://orcid.org/0000-0000-0000-0000"
+preferred-citation:
+  type: article
+  title: "Effect of small circular grains on the clogging dynamics of polygonal particles"
+  status: submitted
+  authors:
+    - family-names: Montero
+      given-names: Julián
+    - family-names: Pugnaloni
+      given-names: Luis A.
+    - family-names: Carlevaro
+      given-names: C. Manuel
+  # journal: ""
+  # year:
+  # doi: ""

@@ -1,0 +1,27 @@
+{
+  "title": "sim-binary-public: DEM simulation and analysis of clogging in a silo with binary mixtures of polygonal and small circular grains",
+  "description": "<p>Simulation code (C++, Box2D 2.4.2), data-generation workflow and Python analysis scripts accompanying the manuscript <em>Effect of small circular grains on the clogging dynamics of polygonal particles</em> by J. Montero, L. A. Pugnaloni and C. M. Carlevaro. Two-dimensional DEM simulations of the discharge of a flat-bottom silo filled with a binary mixture of large grains (disks, triangles, squares or pentagons) and small disks, and the pipeline that produces the avalanche, arch, flow and stress statistics and the figures of the paper.</p>",
+  "upload_type": "software",
+  "license": "MIT",
+  "access_right": "open",
+  "creators": [
+    {"name": "Montero, Julián", "affiliation": "Universidad Nacional de La Pampa"},
+    {"name": "Pugnaloni, Luis A.", "affiliation": "Universidad Nacional de La Pampa"},
+    {"name": "Carlevaro, C. Manuel", "affiliation": "Instituto de Física de Líquidos y Sistemas Biológicos (CONICET-UNLP)"}
+  ],
+  "keywords": [
+    "granular materials",
+    "silo discharge",
+    "clogging",
+    "binary mixtures",
+    "discrete element method",
+    "Box2D"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/montero-j/sim-binary-public",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    }
+  ]
+}
