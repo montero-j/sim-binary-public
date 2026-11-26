@@ -21,7 +21,7 @@
 #   Y_MIN=-2  Y_MAX=20  ventana vertical del render (Y_MAX ~ 60-80 para ver el silo entero)
 #   FPS=25              cuadros por segundo del video
 #   EXE                 ejecutable del simulador (default simulation/bin/eo-silo del repo)
-#   RENDER_EXE, DO_VIDEO  render y armado del video (default: los de renderizar_all.sh)
+#   RENDER_EXE, DO_VIDEO  render y armado del video (externos, obligatorios)
 #   SOLO_PREPARAR=1     solo arma la carpeta y el params.in, no corre nada
 #
 # Ejemplos:
@@ -41,8 +41,9 @@ Y_MIN=${Y_MIN:--2}
 Y_MAX=${Y_MAX:-20}
 FPS=${FPS:-25}
 EXE=${EXE:-$REPO/simulation/bin/eo-silo}
-RENDER_EXE=${RENDER_EXE:-/home/jmontero/box2d_2.4/silo-2d/render/bin/granular_render}
-DO_VIDEO=${DO_VIDEO:-/home/jmontero/box2d_2.4/silo-2d/render/scripts/dovideo.sh}
+# Render y armado del video: herramientas externas, no incluidas en este repositorio
+RENDER_EXE=${RENDER_EXE:-}
+DO_VIDEO=${DO_VIDEO:-}
 
 [ -f "$SIM/params.in" ] || { echo "No hay params.in en $SIM"; exit 1; }
 param() { grep -E "^$1:" "$2" | head -n 1 | sed -E "s/^$1:[[:space:]]*//; s/[[:space:]#].*//"; }
@@ -88,6 +89,7 @@ if [ "$SIN_LLENADO" = 1 ]; then
 fi
 echo "Frames para el video: $(ls "$FR"/frm_*.xy | wc -l)"
 
+[ -x "$RENDER_EXE" ] && [ -x "$DO_VIDEO" ] || { echo "Definir RENDER_EXE y DO_VIDEO (render y script de video externos)"; exit 1; }
 radio=$(param Radio_silo "$BASE/params.in")
 lim=$(echo "$radio + 1" | bc)
 "$RENDER_EXE" -d "$FR" -x -"$lim" "$lim" "$Y_MIN" "$Y_MAX" < /dev/null

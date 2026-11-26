@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -7,8 +7,10 @@ set -euo pipefail
 # ==============================================================================
 # Detecta la ruta donde está guardado este script
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-EJECUTABLE_NAME="eo-silo"
-EJECUTABLE="${BASE_DIR}/${EJECUTABLE_NAME}"
+REPO_DIR="$( cd "${BASE_DIR}/.." && pwd )"
+# Ejecutable y carpeta de salida (se pueden cambiar con variables de entorno)
+EJECUTABLE="${EJECUTABLE:-${REPO_DIR}/simulation/bin/eo-silo}"
+OUT_DIR="${OUT_DIR:-${BASE_DIR}}"
 TEMPLATE_FILE="params_template.in"
 
 # Ejecución local (sin SLURM)
@@ -68,7 +70,7 @@ LANZADAS=0
 for S_BIG in "${SHAPES_BIG[@]}"; do
     SIDES_BIG_VAL=$(get_sides "$S_BIG")
     SIDES_SMALL_VAL=$(get_sides "$SHAPE_SMALL")
-    PARENT_DIR="${BASE_DIR}/MEZCLA_${S_BIG}_${SHAPE_SMALL}"
+    PARENT_DIR="${OUT_DIR}/BARRIDO_${S_BIG}_${SHAPE_SMALL}"
     mkdir -p "${PARENT_DIR}"
 
     for RATIO in "${RATIOS[@]}"; do
@@ -97,7 +99,8 @@ for S_BIG in "${SHAPES_BIG[@]}"; do
             for W in "${WIDTHS[@]}"; do
                 CHI_STR="${CHI/./p}"; RATIO_STR="${RATIO/./p}"; W_STR="${W/./p}"
                 RUNID="${S_BIG}_R${RATIO_STR}_X${CHI_STR}"
-                RUN_DIR="${PARENT_DIR}/${RUNID}"
+                # El análisis lee chi, R_a y el orificio del nombre de la carpeta
+                RUN_DIR="${PARENT_DIR}/Ratio_${RATIO_STR}_Chi_${CHI_STR}_W_${W_STR}"
 
                 if [ -d "${RUN_DIR}" ] && ls "${RUN_DIR}"/frame* 1> /dev/null 2>&1; then
                     echo "   [saltada] ${RUNID}: ya tiene frames"
